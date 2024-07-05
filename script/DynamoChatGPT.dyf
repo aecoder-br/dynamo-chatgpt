@@ -1,0 +1,667 @@
+{
+  "Uuid": "e07d24e5-9362-4e3d-9af5-df468d57d631",
+  "IsCustomNode": true,
+  "Category": "AECOder",
+  "Description": "Custom node to use chat completion chatGPT API inside Dynamo.\r\n\r\n- Project information:\r\nhttps://github.com/mayconrfreitas/dynamo-chatgpt\r\n\r\n- ChatGPT API Reference:\r\nhttps://platform.openai.com/docs/api-reference/chat",
+  "Name": "DynamoChatGPT",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Code": "\"\"\"\r\n-----------------------------------\r\nCreated by Maycon Freitas\r\nAECOder\r\nwww.aecoder.com.br\r\nwww.linkedin.com/in/maycon-freitas/\r\nmaycon.freitas@aecoder.com.br\r\n-----------------------------------\r\n\"\"\"\r\n\r\n\r\n### Libraries ###\r\nimport os\r\nimport clr\r\nimport json\r\nimport sys\r\nimport urllib2\r\nimport traceback\r\n\r\nclr.AddReference('RevitAPIUI')\r\nfrom Autodesk.Revit.UI import *\r\n\r\n\r\n### Classes ###\r\nclass OpenAIMessage:\r\n\tdef __init__(self, message, role=\"user\"):\r\n\t\tself.role = role\r\n\t\tself.content = [{\r\n\t\t\t\"type\": \"text\",\r\n\t\t\t\"text\": message\r\n\t\t}]\r\n\t\r\n\tdef __dict__(self):\r\n\t\treturn {\r\n\t\t\t\"role\": self.role,\r\n\t\t\t\"content\": self.content\r\n\t\t}\r\n\r\n\r\nclass OpenAIHistory:\r\n\tdef __init__(self):\r\n\t\tself.messages = []\r\n\t\tself.path = os.getenv('APPDATA') + \"\\\\AECOder\\\\dynamochatgpt\\\\history.json\"\r\n\t\tif not os.path.exists(self.path):\r\n\t\t\tos.makedirs(os.path.dirname(self.path))\r\n\t\t\tself.save_to_file(self.path)\r\n\t\telse:\r\n\t\t\tself.load_from_file(self.path)\r\n\t\r\n\tdef save_to_file(self, file_path):\r\n\t\twith open(file_path, 'w') as file:\r\n\t\t\tjson.dump(self.messages, file)\r\n\r\n\tdef load_from_file(self, file_path):\r\n\t\twith open(file_path, 'r') as file:\r\n\t\t\ttry:\r\n\t\t\t\tself.messages = json.load(file)\r\n\t\t\texcept:\r\n\t\t\t\tself.messages = []\r\n\t\t\t\tself.save_to_file(self.path)\r\n\r\n\tdef add_message(self, message):\r\n\t\tself.messages.append(message.__dict__)\r\n\t\tself.save_to_file(self.path)\r\n\r\n\tdef get_messages(self):\r\n\t\tself.load_from_file(self.path)\r\n\t\treturn self.messages\r\n\t\r\n\tdef clear(self):\r\n\t\tself.messages = []\r\n\t\tself.save_to_file(self.path)\r\n\r\n\r\nclass OpenAI:\r\n\tdef __init__(self, api_key, organization_id=\"\", project_id=\"\", clear_history=False):\r\n\t\tself.api_key = api_key\r\n\t\tself.organization_id = organization_id\r\n\t\tself.project_id = project_id\r\n\r\n\t\t# Set the API key\r\n\t\tself.headers = {\r\n\t\t\t'Content-Type': 'application/json',\r\n\t\t\t'Authorization': 'Bearer ' + self.api_key\r\n\t\t}\r\n\r\n\t\tif self.organization_id != \"\":\r\n\t\t\tself.headers['OpenAI-Organization'] = self.organization_id\r\n\r\n\t\tif self.project_id != \"\":\r\n\t\t\tself.headers['OpenAI-Project'] = self.project_id\r\n\t\t\r\n\t\tself.history = OpenAIHistory()\r\n\t\tif clear_history:\r\n\t\t\tself.clear_history()\r\n\r\n\r\n\tdef create_completion(self, prompt, model=\"gpt-4o\", temperature=0, max_tokens=4095, top_p=1, frequency_penalty=0, presence_penalty=0):\r\n\t\turl = 'https://api.openai.com/v1/chat/completions'\r\n\r\n\t\topenai_message = OpenAIMessage(prompt)\r\n\t\tself.history.add_message(openai_message)\r\n\r\n\t\tdata = \"{ \\\"messages\\\": \" + json.dumps(self.history.get_messages()) + \", \\\"model\\\": \\\"\" + model + \"\\\", \\\"temperature\\\": \" + str(temperature) + \", \\\"max_tokens\\\": \" + str(max_tokens) + \", \\\"top_p\\\": \" + str(top_p) + \", \\\"frequency_penalty\\\": \" + str(frequency_penalty) + \", \\\"presence_penalty\\\": \" + str(presence_penalty) + \" }\"\r\n\r\n\t\treq = urllib2.Request(url, data, self.headers)\r\n\t\tresponse = urllib2.urlopen(req)\r\n\r\n\t\tsystem_response = json.loads(response.read().decode('utf-8')).get('choices')[0].get('message').get('content')\r\n\t\tself.history.add_message(OpenAIMessage(system_response, \"system\"))\r\n\r\n\t\treturn system_response\r\n\r\n\tdef get_history(self):\r\n\t\treturn self.history.get_messages()\r\n\t\r\n\tdef clear_history(self):\r\n\t\tself.history.clear()\r\n\r\n\r\n### Main ###\r\napi_key = IN[0]\r\norganization_id = IN[1]\r\nproject_id = IN[2]\r\n\r\nprompt = IN[3]\r\nmodel = IN[4]\r\ntemperature = IN[5]\r\nmax_tokens = IN[6]\r\ntop_p = IN[7]\r\nfrequency_penalty = IN[8]\r\npresence_penalty = IN[9]\r\nclear_history = bool(IN[10])\r\n\r\ntry:\r\n\topenai = OpenAI(api_key, organization_id, project_id, clear_history)\r\n\r\n\tif len(prompt) > 0:\r\n\t\tresponse = openai.create_completion(prompt, model, temperature, max_tokens, top_p, frequency_penalty, presence_penalty)\r\n\t\tOUT = response\r\n\telse:\r\n\t\traise Exception(\"Prompt is empty\")\r\n\t\r\n\r\nexcept:\r\n\ttry:\r\n\t\tmsg = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])[0].replace(\"Exception: \", \"\")\r\n\texcept:\r\n\t\tmsg = \"An error has occurred. See details to get more information.\"\r\n\terrorReport = traceback.format_exc()\r\n\ttaskDialog = TaskDialog(\"Error\")\r\n\ttaskDialog.MainInstruction = msg\r\n\ttaskDialog.ExpandedContent = errorReport\r\n\ttaskDialog.Show()\r\n\tOUT = errorReport",
+      "Engine": "IronPython2",
+      "VariableInputPorts": true,
+      "Id": "9c370779cf4a4e69807770f8290c6507",
+      "Inputs": [
+        {
+          "Id": "e1f538bd83fc48d58601f42ebb9199fa",
+          "Name": "IN[0]",
+          "Description": "Input #0",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "025b34b5078b44ec9e4ef4ad86ce5995",
+          "Name": "IN[1]",
+          "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "9b9136c2830c43c0b4a5983c80ceb681",
+          "Name": "IN[2]",
+          "Description": "Input #2",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "5938c4777970434498daafb4350fb94f",
+          "Name": "IN[3]",
+          "Description": "Input #3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "ccedb20b9b0741c0b317f6b7e7bde9de",
+          "Name": "IN[4]",
+          "Description": "Input #4",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "d6b3917472b443d19ff71a5c3c251cd5",
+          "Name": "IN[5]",
+          "Description": "Input #5",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "03e70da62a49473584f19471399fd877",
+          "Name": "IN[6]",
+          "Description": "Input #6",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "12c0b681c56546ac8d01ee883dd721af",
+          "Name": "IN[7]",
+          "Description": "Input #7",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "d913f075e2d34b52a5d58dc7de4473d7",
+          "Name": "IN[8]",
+          "Description": "Input #8",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "91d8f14c753b464394514444a16cf0a6",
+          "Name": "IN[9]",
+          "Description": "Input #9",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "dc30397d84df4378adb942509cb03583",
+          "Name": "IN[10]",
+          "Description": "Input #10",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "87da9c3a77c9498eb104017c9f42e7f0",
+          "Name": "OUT",
+          "Description": "Result of the python script",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Runs an embedded Python script."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CustomNodes.Symbol, DynamoCore",
+      "NodeType": "InputNode",
+      "Parameter": {
+        "Name": "prompt",
+        "TypeName": "string",
+        "TypeRank": 0,
+        "DefaultValue": null,
+        "Description": "Write your prompt here... (required)"
+      },
+      "Id": "9ff4e70f27b34ca2b4ae8ce866ee801b",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "c31885a780394fa0b5f209f8c764c96d",
+          "Name": "",
+          "Description": "Symbol",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A function parameter, use with custom nodes.\r\n\r\nYou can specify the type and default value for parameter. E.g.,\r\n\r\ninput : var[]..[]\r\nvalue : bool = false"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CustomNodes.Symbol, DynamoCore",
+      "NodeType": "InputNode",
+      "Parameter": {
+        "Name": "api_key",
+        "TypeName": "string",
+        "TypeRank": 0,
+        "DefaultValue": null,
+        "Description": "OpenAI API Key (required)\n- Tutorial:\nhttps://platform.openai.com/docs/quickstart"
+      },
+      "Id": "6da0448b43154056a8be38d3d58a1db1",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "9473e146e83240d29931d3ec4513fc3e",
+          "Name": "",
+          "Description": "Symbol",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A function parameter, use with custom nodes.\r\n\r\nYou can specify the type and default value for parameter. E.g.,\r\n\r\ninput : var[]..[]\r\nvalue : bool = false"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CustomNodes.Output, DynamoCore",
+      "NodeType": "OutputNode",
+      "ElementResolver": null,
+      "Symbol": "response",
+      "Id": "b95ba7967c534128aec9114b931b3a4b",
+      "Inputs": [
+        {
+          "Id": "12af0f947b894cb3b40034660766a5d9",
+          "Name": "",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [],
+      "Replication": "Disabled",
+      "Description": "A function output, use with custom nodes"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CustomNodes.Symbol, DynamoCore",
+      "NodeType": "InputNode",
+      "Parameter": {
+        "Name": "organization_id",
+        "TypeName": "string",
+        "TypeRank": 0,
+        "DefaultValue": "\"\"",
+        "Description": "Organization ID (optional)\n- Found here:\nhttps://platform.openai.com/settings/organization/general"
+      },
+      "Id": "6ce80c9200a5467893bd72b4e5489ae1",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "f16feb27da684f15bbefc9317e327abb",
+          "Name": "",
+          "Description": "Symbol",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A function parameter, use with custom nodes.\r\n\r\nYou can specify the type and default value for parameter. E.g.,\r\n\r\ninput : var[]..[]\r\nvalue : bool = false"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CustomNodes.Symbol, DynamoCore",
+      "NodeType": "InputNode",
+      "Parameter": {
+        "Name": "project_id",
+        "TypeName": "string",
+        "TypeRank": 0,
+        "DefaultValue": "\"\"",
+        "Description": "Project ID (optional)\n- Found here under 'Project > General':\nhttps://platform.openai.com/settings/organization/general"
+      },
+      "Id": "6a47ab3f54d344a6979c8a60a19716ea",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "aa9bcf71e53b4e969fc8c492a2704da2",
+          "Name": "",
+          "Description": "Symbol",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A function parameter, use with custom nodes.\r\n\r\nYou can specify the type and default value for parameter. E.g.,\r\n\r\ninput : var[]..[]\r\nvalue : bool = false"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CustomNodes.Symbol, DynamoCore",
+      "NodeType": "InputNode",
+      "Parameter": {
+        "Name": "model",
+        "TypeName": "string",
+        "TypeRank": 0,
+        "DefaultValue": "\"gpt-3.5-turbo\"",
+        "Description": "Model (required)\n- Find about models here:\nhttps://platform.openai.com/docs/models\n"
+      },
+      "Id": "6f0609d668494bed9ff2d83a02d12276",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "ebe1d9ba9b8f4d4a933b6a127bf3a320",
+          "Name": "",
+          "Description": "Symbol",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A function parameter, use with custom nodes.\r\n\r\nYou can specify the type and default value for parameter. E.g.,\r\n\r\ninput : var[]..[]\r\nvalue : bool = false"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CustomNodes.Symbol, DynamoCore",
+      "NodeType": "InputNode",
+      "Parameter": {
+        "Name": "temperature",
+        "TypeName": "int",
+        "TypeRank": 0,
+        "DefaultValue": "0",
+        "Description": "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.\nWe generally recommend altering this or top_p but not both."
+      },
+      "Id": "1b73daa11f8e4323b19741a1f35edfae",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "17c79c6124564406a34a926aedfb7fbc",
+          "Name": "",
+          "Description": "Symbol",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A function parameter, use with custom nodes.\r\n\r\nYou can specify the type and default value for parameter. E.g.,\r\n\r\ninput : var[]..[]\r\nvalue : bool = false"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CustomNodes.Symbol, DynamoCore",
+      "NodeType": "InputNode",
+      "Parameter": {
+        "Name": "max_tokens",
+        "TypeName": "int",
+        "TypeRank": 0,
+        "DefaultValue": "4095",
+        "Description": "The maximum number of tokens that can be generated in the chat completion.\nThe total length of input tokens and generated tokens is limited by the model's context length.\n- More information about tokens:\nhttps://platform.openai.com/tokenizer"
+      },
+      "Id": "b8fb658dec414ad8b4c05bd989b85cee",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "49785d89d5364be7a31290a0334d9879",
+          "Name": "",
+          "Description": "Symbol",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A function parameter, use with custom nodes.\r\n\r\nYou can specify the type and default value for parameter. E.g.,\r\n\r\ninput : var[]..[]\r\nvalue : bool = false"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CustomNodes.Symbol, DynamoCore",
+      "NodeType": "InputNode",
+      "Parameter": {
+        "Name": "top_p",
+        "TypeName": "int",
+        "TypeRank": 0,
+        "DefaultValue": "1",
+        "Description": "An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered.\nWe generally recommend altering this or temperature but not both."
+      },
+      "Id": "ca5b1060c8ba4b15ba21834f9743eb25",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "41496b31ed9048b6aebe116fd2f83cba",
+          "Name": "",
+          "Description": "Symbol",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A function parameter, use with custom nodes.\r\n\r\nYou can specify the type and default value for parameter. E.g.,\r\n\r\ninput : var[]..[]\r\nvalue : bool = false"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CustomNodes.Symbol, DynamoCore",
+      "NodeType": "InputNode",
+      "Parameter": {
+        "Name": "frequency_penalty",
+        "TypeName": "int",
+        "TypeRank": 0,
+        "DefaultValue": "0",
+        "Description": "Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.\n- More information:\nhttps://platform.openai.com/docs/guides/text-generation/parameter-details"
+      },
+      "Id": "19f6487cdb6742f7878a540316104a01",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "5928e2c4e155469f95c0a3c245253879",
+          "Name": "",
+          "Description": "Symbol",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A function parameter, use with custom nodes.\r\n\r\nYou can specify the type and default value for parameter. E.g.,\r\n\r\ninput : var[]..[]\r\nvalue : bool = false"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CustomNodes.Symbol, DynamoCore",
+      "NodeType": "InputNode",
+      "Parameter": {
+        "Name": "presence_penalty",
+        "TypeName": "int",
+        "TypeRank": 0,
+        "DefaultValue": "0",
+        "Description": "Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.\n- More information:\nhttps://platform.openai.com/docs/guides/text-generation/parameter-details"
+      },
+      "Id": "0eae112c62cd4257868e022a4c703c26",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "d6ede812fc714c64976bbbf800a14a56",
+          "Name": "",
+          "Description": "Symbol",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A function parameter, use with custom nodes.\r\n\r\nYou can specify the type and default value for parameter. E.g.,\r\n\r\ninput : var[]..[]\r\nvalue : bool = false"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CustomNodes.Symbol, DynamoCore",
+      "NodeType": "InputNode",
+      "Parameter": {
+        "Name": "clear_history",
+        "TypeName": "bool",
+        "TypeRank": 0,
+        "DefaultValue": "false",
+        "Description": "Clear chat history?\nIf 'false', all your chat history will be sent (so more tokens)\nIf 'true', it will clear the chat history before sending"
+      },
+      "Id": "9aeccc518a954c538fbb28e54f4d5d4a",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "60e77ae84aab421183e62bf7f8a3c98c",
+          "Name": "",
+          "Description": "Symbol",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A function parameter, use with custom nodes.\r\n\r\nYou can specify the type and default value for parameter. E.g.,\r\n\r\ninput : var[]..[]\r\nvalue : bool = false"
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "87da9c3a77c9498eb104017c9f42e7f0",
+      "End": "12af0f947b894cb3b40034660766a5d9",
+      "Id": "1facd5e8cbf740719f55bd0225acb5c7"
+    },
+    {
+      "Start": "c31885a780394fa0b5f209f8c764c96d",
+      "End": "5938c4777970434498daafb4350fb94f",
+      "Id": "a79e4d773dd241ad8df0970496a136d9"
+    },
+    {
+      "Start": "9473e146e83240d29931d3ec4513fc3e",
+      "End": "e1f538bd83fc48d58601f42ebb9199fa",
+      "Id": "24f932630c6a41f4945dfb0efd254a86"
+    },
+    {
+      "Start": "f16feb27da684f15bbefc9317e327abb",
+      "End": "025b34b5078b44ec9e4ef4ad86ce5995",
+      "Id": "b0dcc173e5374ef6993286b5e7058ea3"
+    },
+    {
+      "Start": "aa9bcf71e53b4e969fc8c492a2704da2",
+      "End": "9b9136c2830c43c0b4a5983c80ceb681",
+      "Id": "324ca0b99b3843e68603a1823c87a177"
+    },
+    {
+      "Start": "ebe1d9ba9b8f4d4a933b6a127bf3a320",
+      "End": "ccedb20b9b0741c0b317f6b7e7bde9de",
+      "Id": "a7362df71b31495188e6f355ecd62e99"
+    },
+    {
+      "Start": "17c79c6124564406a34a926aedfb7fbc",
+      "End": "d6b3917472b443d19ff71a5c3c251cd5",
+      "Id": "35f55e92fe214fbb936db3a4a1aa200c"
+    },
+    {
+      "Start": "49785d89d5364be7a31290a0334d9879",
+      "End": "03e70da62a49473584f19471399fd877",
+      "Id": "029434cc1565424f9fcd26ac75fffc4a"
+    },
+    {
+      "Start": "41496b31ed9048b6aebe116fd2f83cba",
+      "End": "12c0b681c56546ac8d01ee883dd721af",
+      "Id": "2ad8f0e46c34471aa2c7dcf169ecb85a"
+    },
+    {
+      "Start": "5928e2c4e155469f95c0a3c245253879",
+      "End": "d913f075e2d34b52a5d58dc7de4473d7",
+      "Id": "94bba46a70164f57a0415b35b12fc96e"
+    },
+    {
+      "Start": "d6ede812fc714c64976bbbf800a14a56",
+      "End": "91d8f14c753b464394514444a16cf0a6",
+      "Id": "8d3120b7a5174376b574b2f0f19730b2"
+    },
+    {
+      "Start": "60e77ae84aab421183e62bf7f8a3c98c",
+      "End": "dc30397d84df4378adb942509cb03583",
+      "Id": "e73ab006094a4e45a04464f98a969365"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "Author": "None provided",
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": false,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.12.1.8246",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "Python Script",
+        "Id": "9c370779cf4a4e69807770f8290c6507",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1072.0008190403478,
+        "Y": 447.1065366219874
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Input",
+        "Id": "9ff4e70f27b34ca2b4ae8ce866ee801b",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 2.1288016343675054,
+        "Y": 355.38932249970208
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Input",
+        "Id": "6da0448b43154056a8be38d3d58a1db1",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 3.2516799032080144,
+        "Y": -0.62047125181865681
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Output",
+        "Id": "b95ba7967c534128aec9114b931b3a4b",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1300.8305816978047,
+        "Y": 448.90830220227554
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Input",
+        "Id": "6ce80c9200a5467893bd72b4e5489ae1",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1.3455032383807293,
+        "Y": 122.16236186950977
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Input",
+        "Id": "6a47ab3f54d344a6979c8a60a19716ea",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 1.1586568916052329,
+        "Y": 235.79138210610051
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Input",
+        "Id": "6f0609d668494bed9ff2d83a02d12276",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 4.0652764531936327,
+        "Y": 438.55561289349339
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Input",
+        "Id": "1b73daa11f8e4323b19741a1f35edfae",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 5.1315128755583146,
+        "Y": 566.71942794686845
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Input",
+        "Id": "b8fb658dec414ad8b4c05bd989b85cee",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 7.0441213039661079,
+        "Y": 689.80612391885973
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Input",
+        "Id": "ca5b1060c8ba4b15ba21834f9743eb25",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 6.5414804504023323,
+        "Y": 838.89323720872039
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Input",
+        "Id": "19f6487cdb6742f7878a540316104a01",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 8.5039277260435711,
+        "Y": 955.62215108875853
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Input",
+        "Id": "0eae112c62cd4257868e022a4c703c26",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 8.8147925603852855,
+        "Y": 1116.4632237981859
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Input",
+        "Id": "9aeccc518a954c538fbb28e54f4d5d4a",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 8.959148106689895,
+        "Y": 1255.7937082034646
+      }
+    ],
+    "Annotations": [],
+    "X": 233.82443109424014,
+    "Y": 28.337638370745594,
+    "Zoom": 0.57298771987603392
+  }
+}
