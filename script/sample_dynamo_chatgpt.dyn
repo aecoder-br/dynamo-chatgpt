@@ -1,0 +1,456 @@
+{
+  "Uuid": "91167dc5-1900-4301-926f-bc81b298c86b",
+  "IsCustomNode": false,
+  "Description": "",
+  "Name": "sample_dynamo_chatgpt",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [
+    {
+      "Id": "5857200c9a4b4452ba7ad241138590b5",
+      "Name": "String",
+      "Type": "string",
+      "Value": "",
+      "Description": "Creates a string.",
+      "SelectedIndex": 0
+    },
+    {
+      "Id": "91db75b35d634b138006feb4bd537b19",
+      "Name": "String",
+      "Type": "string",
+      "Value": "Hi",
+      "Description": "Creates a string.",
+      "SelectedIndex": 0
+    }
+  ],
+  "Outputs": [
+    {
+      "Id": "5b97c89f10b54a71b6b4f385b1b8f8a7",
+      "Name": "Watch",
+      "Type": "string",
+      "InitialValue": "Hello! How can I assist you today?",
+      "Description": "Visualize the node's output"
+    }
+  ],
+  "Nodes": [
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "",
+      "Id": "5857200c9a4b4452ba7ad241138590b5",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "6cbf80287304484a986a69ec5076525b",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "NodeType": "ExtensionNode",
+      "Id": "5b97c89f10b54a71b6b4f385b1b8f8a7",
+      "Inputs": [
+        {
+          "Id": "0847693c46c14032896113d46f71dd29",
+          "Name": "",
+          "Description": "Node to show output from",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "9e5fdd9a9f7b44edbd2447fdc82eab71",
+          "Name": "",
+          "Description": "Node output",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualize the node's output"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Hi",
+      "Id": "91db75b35d634b138006feb4bd537b19",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "ce7d8db757f94fb09ab4b2d9a15e527c",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CustomNodes.Function, DynamoCore",
+      "FunctionSignature": "e07d24e5-9362-4e3d-9af5-df468d57d631",
+      "FunctionType": "Graph",
+      "NodeType": "FunctionNode",
+      "Id": "14215ef0962d450aaf50ea1c45c124ae",
+      "Inputs": [
+        {
+          "Id": "a5e4ca3fb4084fa18bddd56963a74426",
+          "Name": "prompt",
+          "Description": "Write your prompt here... (required)\n\nstring",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "4cdfe0c2eb33412890e02038bc6f1416",
+          "Name": "api_key",
+          "Description": "OpenAI API Key (required)\n- Tutorial:\nhttps://platform.openai.com/docs/quickstart\n\nstring",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "b8f946c8ef5b4fbbadd14673489293f0",
+          "Name": "organization_id",
+          "Description": "Organization ID (optional)\n- Found here:\nhttps://platform.openai.com/settings/organization/general\n\nstring\nDefault value : \"\"",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "8cc92fae019e499a8c86ffc1e26fcf4e",
+          "Name": "project_id",
+          "Description": "Project ID (optional)\n- Found here under 'Project > General':\nhttps://platform.openai.com/settings/organization/general\n\nstring\nDefault value : \"\"",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "8b9314ae96e647d3ad09b68297114b52",
+          "Name": "model",
+          "Description": "Model (required)\n- Find about models here:\nhttps://platform.openai.com/docs/models\n\n\nstring\nDefault value : \"gpt-3.5-turbo\"",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "05ee4a3ffe6b45bc9a9a2e3d7ce39883",
+          "Name": "temperature",
+          "Description": "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.\nWe generally recommend altering this or top_p but not both.\n\nint\nDefault value : 0",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "0f30a52cd4cd405cb6b64cc1e2e330de",
+          "Name": "max_tokens",
+          "Description": "The maximum number of tokens that can be generated in the chat completion.\nThe total length of input tokens and generated tokens is limited by the model's context length.\n- More information about tokens:\nhttps://platform.openai.com/tokenizer\n\nint\nDefault value : 4095",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "aa97a70662384ba4b9414a28566f94d1",
+          "Name": "top_p",
+          "Description": "An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered.\nWe generally recommend altering this or temperature but not both.\n\nint\nDefault value : 1",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "ba1a5ef1b25f416fa548fac402edeefe",
+          "Name": "frequency_penalty",
+          "Description": "Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.\n- More information:\nhttps://platform.openai.com/docs/guides/text-generation/parameter-details\n\nint\nDefault value : 0",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "23989bf40a784ccebfb152e15867a172",
+          "Name": "presence_penalty",
+          "Description": "Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.\n- More information:\nhttps://platform.openai.com/docs/guides/text-generation/parameter-details\n\nint\nDefault value : 0",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "34c86727a3b14c15bcaa2416cc663543",
+          "Name": "clear_history",
+          "Description": "Clear chat history?\nIf 'false', all your chat history will be sent (so more tokens)\nIf 'true', it will clear the chat history before sending\n\nbool\nDefault value : false",
+          "UsingDefaultValue": true,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "54af357933d942eb8de668a48508906e",
+          "Name": "response",
+          "Description": "return value",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Auto",
+      "Description": "Custom node to use chat completion chatGPT API inside Dynamo.\r\n\r\n- Project information:\r\nhttps://github.com/mayconrfreitas/dynamo-chatgpt\r\n\r\n- ChatGPT API Reference:\r\nhttps://platform.openai.com/docs/api-reference/chat"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": false,
+      "Id": "0d0903b1131c44cbad0d7620ae96055b",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "59d95555e9b947cc863f0636eef84d52",
+          "Name": "",
+          "Description": "Boolean",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Selection between a true and false."
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "6cbf80287304484a986a69ec5076525b",
+      "End": "4cdfe0c2eb33412890e02038bc6f1416",
+      "Id": "aee0817cc7fc467ea656682c3a9e7480"
+    },
+    {
+      "Start": "ce7d8db757f94fb09ab4b2d9a15e527c",
+      "End": "a5e4ca3fb4084fa18bddd56963a74426",
+      "Id": "d692ea832d884d829c614f1cd2ed45b7"
+    },
+    {
+      "Start": "54af357933d942eb8de668a48508906e",
+      "End": "0847693c46c14032896113d46f71dd29",
+      "Id": "88ee1ec0485e43698eb280f501d3d3d3"
+    },
+    {
+      "Start": "59d95555e9b947cc863f0636eef84d52",
+      "End": "34c86727a3b14c15bcaa2416cc663543",
+      "Id": "78517b3d268249ba99ec234d40e99f9d"
+    }
+  ],
+  "Dependencies": [
+    "e07d24e5-9362-4e3d-9af5-df468d57d631"
+  ],
+  "NodeLibraryDependencies": [],
+  "Thumbnail": "",
+  "GraphDocumentationURL": null,
+  "ExtensionWorkspaceData": [
+    {
+      "ExtensionGuid": "28992e1d-abb9-417f-8b1b-05e053bee670",
+      "Name": "Properties",
+      "Version": "2.12",
+      "Data": {}
+    },
+    {
+      "ExtensionGuid": "DFBD9CC0-DB40-457A-939E-8C8555555A9D",
+      "Name": "Generative Design",
+      "Version": "1.10",
+      "Data": {}
+    }
+  ],
+  "Author": "",
+  "Linting": {
+    "activeLinter": "None",
+    "activeLinterId": "7b75fb44-43fd-4631-a878-29f4d5d8399a",
+    "warningCount": 0,
+    "errorCount": 0
+  },
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "2.12.1.8246",
+      "RunType": "Manual",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "NodeViews": [
+      {
+        "ShowGeometry": true,
+        "Name": "String",
+        "Id": "5857200c9a4b4452ba7ad241138590b5",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -132.83771113632758,
+        "Y": 533.3050771115303
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Watch",
+        "Id": "5b97c89f10b54a71b6b4f385b1b8f8a7",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": true,
+        "Excluded": false,
+        "X": 558.48820850614,
+        "Y": 426.44776466721913
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "String",
+        "Id": "91db75b35d634b138006feb4bd537b19",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -131.13931429596926,
+        "Y": 426.30196748573849
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "DynamoChatGPT",
+        "Id": "14215ef0962d450aaf50ea1c45c124ae",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 185.90707380604204,
+        "Y": 425.99744885136283
+      },
+      {
+        "ShowGeometry": true,
+        "Name": "Boolean",
+        "Id": "0d0903b1131c44cbad0d7620ae96055b",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": -133.80669331532476,
+        "Y": 688.99672364068761
+      }
+    ],
+    "Annotations": [
+      {
+        "Id": "e937f76b33ea4082a19bd98320b2d8ed",
+        "Title": "INPUTS",
+        "Nodes": [
+          "5857200c9a4b4452ba7ad241138590b5",
+          "54d57885ca4d41378fc7b9f74cc1ba09",
+          "91db75b35d634b138006feb4bd537b19",
+          "cd63fe4913e84ec08db4534cf6100051",
+          "0d0903b1131c44cbad0d7620ae96055b",
+          "1026831d960f465a8af8679aaf06a23d"
+        ],
+        "Left": -144.11125097413981,
+        "Top": 336.02799574371244,
+        "Width": 208.64881615988531,
+        "Height": 420.96872789697517,
+        "FontSize": 36.0,
+        "InitialTop": 389.02799574371244,
+        "InitialHeight": 129.0,
+        "TextblockHeight": 43.0,
+        "Background": "#FF48B9FF"
+      },
+      {
+        "Id": "6478678832ec4bbd89f35946c0a6dae4",
+        "Title": "Response",
+        "Nodes": [
+          "5b97c89f10b54a71b6b4f385b1b8f8a7"
+        ],
+        "Left": 548.48820850614,
+        "Top": 373.44776466721913,
+        "Width": 230.0,
+        "Height": 331.00000000000006,
+        "FontSize": 36.0,
+        "InitialTop": 426.44776466721913,
+        "InitialHeight": 308.0,
+        "TextblockHeight": 43.0,
+        "Background": "#FF48B9FF"
+      },
+      {
+        "Id": "cd63fe4913e84ec08db4534cf6100051",
+        "Title": "Insert your openAI API key here",
+        "Nodes": [],
+        "Left": -132.46243481425449,
+        "Top": 500.334145758485,
+        "Width": 0.0,
+        "Height": 0.0,
+        "FontSize": 36.0,
+        "InitialTop": 0.0,
+        "InitialHeight": 0.0,
+        "TextblockHeight": 0.0,
+        "Background": "#FFC1D676"
+      },
+      {
+        "Id": "54d57885ca4d41378fc7b9f74cc1ba09",
+        "Title": "Insert your prompt here",
+        "Nodes": [],
+        "Left": -129.04965723141788,
+        "Top": 389.02799574371244,
+        "Width": 0.0,
+        "Height": 0.0,
+        "FontSize": 36.0,
+        "InitialTop": 0.0,
+        "InitialHeight": 0.0,
+        "TextblockHeight": 0.0,
+        "Background": "#FFC1D676"
+      },
+      {
+        "Id": "1026831d960f465a8af8679aaf06a23d",
+        "Title": "True = Clear chat history\r\nFalse = Keep chat history",
+        "Nodes": [],
+        "Left": -134.11125097413981,
+        "Top": 638.58161831459086,
+        "Width": 0.0,
+        "Height": 0.0,
+        "FontSize": 36.0,
+        "InitialTop": 0.0,
+        "InitialHeight": 0.0,
+        "TextblockHeight": 0.0,
+        "Background": "#FFC1D676"
+      }
+    ],
+    "X": 474.24309735514635,
+    "Y": -89.304321196295973,
+    "Zoom": 0.90610637144607276
+  }
+}
